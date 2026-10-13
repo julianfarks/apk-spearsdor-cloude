@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Separador de voz</string>
+    <string name="title">Voz / Instrumental</string>
+    <string name="subtitle">Sube una canción y elige qué quieres escuchar.</string>
+    <string name="btn_pick">Elegir canción</string>
+    <string name="no_song">Ninguna canción elegida</string>
+    <string name="default_song_name">canción</string>
+    <string name="status_idle">Elige una canción para empezar.</string>
+    <string name="status_reading">Leyendo la canción…</string>
+    <string name="status_separating">Separando voz e instrumental…</string>
+    <string name="status_ready">Listo. Elige qué quieres escuchar.</string>
+    <string name="listen_label">Escuchar</string>
+    <string name="mode_all">Canción completa</string>
+    <string name="mode_instrumental">Solo instrumental (sin voz)</string>
+    <string name="mode_vocals">Solo voz</string>
+    <string name="btn_play">Reproducir</string>
+    <string name="btn_pause">Pausar</string>
+    <string name="err_mono">Esta canción es mono (izquierda y derecha son iguales), así que con este método no se puede separar la voz.</string>
+    <string name="err_too_long">La canción es demasiado larga para la memoria de tu teléfono.</string>
+    <string name="err_generic">No pude procesar este archivo:</string>
+</resources>
