@@ -5,6 +5,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -27,3 +30,11 @@ jobs:
         with:
           name: separador-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Publicar APK en Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk separador-voz.apk
+          gh release delete apk-actual --yes --cleanup-tag || true
+          gh release create apk-actual separador-voz.apk --title "APK actual" --notes "Ultima compilacion del Separador de voz" --target "${{ github.sha }}"
