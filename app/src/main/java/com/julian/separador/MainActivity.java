@@ -175,7 +175,7 @@ public class MainActivity extends Activity {
                 final AudioDecoder.Result r = AudioDecoder.decode(this, uri,
                         f -> postProgress(getString(R.string.status_reading), f * 0.3f));
 
-                long needed = 8L * r.frames;
+                long needed = 12L * r.frames; // original + voz + instrumental
                 if (needed > (long) (Runtime.getRuntime().maxMemory() * 0.6)) {
                     postError(getString(R.string.err_too_long));
                     return;
@@ -187,10 +187,12 @@ public class MainActivity extends Activity {
 
                 short[] vl = new short[r.frames];
                 short[] vr = new short[r.frames];
-                Separator.extractVoice(r.left, r.right, r.frames, r.sampleRate, vl, vr,
+                short[] il = new short[r.frames];
+                short[] ir = new short[r.frames];
+                Separator.extract(r.left, r.right, r.frames, r.sampleRate, vl, vr, il, ir,
                         f -> postProgress(getString(R.string.status_separating), 0.3f + f * 0.7f));
 
-                final PlayerEngine e = new PlayerEngine(r.left, r.right, vl, vr,
+                final PlayerEngine e = new PlayerEngine(r.left, r.right, vl, vr, il, ir,
                         r.frames, r.sampleRate, this::onTrackFinished);
                 ui.post(() -> onReady(e, r.frames, r.sampleRate));
             } catch (OutOfMemoryError oom) {

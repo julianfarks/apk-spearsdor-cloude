@@ -5,8 +5,8 @@ import android.media.AudioFormat;
 import android.media.AudioTrack;
 
 /**
- * Reproduce la canción desde memoria. Puede sonar todo, solo la instrumental
- * (original - voz) o solo la voz, y se puede cambiar en pleno reproducción
+ * Reproduce la canción desde memoria. Puede sonar todo (original), solo la
+ * instrumental o solo la voz, y se puede cambiar en pleno reproducción
  * (con un pequeño fundido para que no haya "clics").
  */
 final class PlayerEngine {
@@ -21,10 +21,15 @@ final class PlayerEngine {
 
     private static final int CHUNK_FRAMES = 2048;
 
+    /** La pista de voz sale más baja que el original (la máscara quita energía): se compensa un poco. */
+    private static final float VOICE_MAKEUP_GAIN = 1.5f;
+
     private final short[] origL;
     private final short[] origR;
     private final short[] vocL;
     private final short[] vocR;
+    private final short[] instL;
+    private final short[] instR;
     private final int length;
     private final int sampleRate;
     private final Listener listener;
@@ -39,16 +44,19 @@ final class PlayerEngine {
     private int pos = 0;      // siguiente muestra a escribir (protegido por lock)
     private int seekGen = 0;  // cambia cada vez que se hace seek (protegido por lock)
 
-    // Ganancias actuales (solo las toca el hilo de reproducción)
-    private float gainVoice = 1f;
-    private float gainInstr = 1f;
+    // Ganancias actuales de cada pista (solo las toca el hilo de reproducción)
+    private float gainOrig = 1f;
+    private float gainVoice = 0f;
+    private float gainInstr = 0f;
 
     PlayerEngine(short[] origL, short[] origR, short[] vocL, short[] vocR,
-                 int length, int sampleRate, Listener listener) {
+                 short[] instL, short[] instR, int length, int sampleRate, Listener listener) {
         this.origL = origL;
         this.origR = origR;
         this.vocL = vocL;
         this.vocR = vocR;
+        this.instL = instL;
+        this.instR = instR;
         this.length = length;
         this.sampleRate = sampleRate;
         this.listener = listener;
@@ -211,13 +219,19 @@ final class PlayerEngine {
 
     private void fill(short[] out, int start, int n) {
         int m = mode;
-        float targetVoice = (m == MODE_INSTRUMENTAL) ? 0f : 1f;
-        float targetInstr = (m == MODE_VOCALS) ? 0f : 1f;
+        float targetOrig = (m == MODE_ALL) ? 1f : 0f;
+        float targetVoice = (m == MODE_VOCALS) ? VOICE_MAKEUP_GAIN : 0f;
+        float targetInstr = (m == MODE_INSTRUMENTAL) ? 1f : 0f;
+        float go = gainOrig;
         float gv = gainVoice;
         float gi = gainInstr;
         for (int i = 0; i < n; i++) {
+            go += (targetOrig - go) * 0.0015f;
             gv += (targetVoice - gv) * 0.0015f;
             gi += (targetInstr - gi) * 0.0015f;
+            if (Math.abs(targetOrig - go) < 1e-3f) {
+                go = targetOrig;
+            }
             if (Math.abs(targetVoice - gv) < 1e-3f) {
                 gv = targetVoice;
             }
@@ -225,13 +239,12 @@ final class PlayerEngine {
                 gi = targetInstr;
             }
             int idx = start + i;
-            int vl = vocL[idx];
-            int vr = vocR[idx];
-            float l = gv * vl + gi * (origL[idx] - vl);
-            float r = gv * vr + gi * (origR[idx] - vr);
+            float l = go * origL[idx] + gv * vocL[idx] + gi * instL[idx];
+            float r = go * origR[idx] + gv * vocR[idx] + gi * instR[idx];
             out[2 * i] = clip(l);
             out[2 * i + 1] = clip(r);
         }
+        gainOrig = go;
         gainVoice = gv;
         gainInstr = gi;
     }
